@@ -8,6 +8,9 @@ remnant_rules:
     explanation: App-written support data left behind after uninstall.
     source:
       name: "{appName}"
+    applies_to:
+      exclude_bundle_ids:
+        - com.apple.finder
     regenerates: false
     tags:
       - generic

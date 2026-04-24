@@ -17,6 +17,10 @@ Common fields:
 - `paths`: one or more absolute or `~`-relative glob paths.
 - `pattern`: optional filename filter inside a matched directory.
 - `exclude`: optional glob exclusions.
+- `skip_if_process_running`: optional bundle IDs or process/app names that skip the rule while running.
+- `presence_guards`: optional candidate-relative or absolute paths that skip a match when present.
+- `content_guards`: optional candidate-relative or absolute files whose contents can skip a match.
+- `match_filters`: optional conditions that must match before an item is surfaced, such as `mtime age > 30d`.
 - `safety`: `safe`, `review`, or `protected`.
 - `confidence`: integer from `0` to `100`.
 - `explanation`: one-line rationale shown in the app.
@@ -48,6 +52,24 @@ rules:
     category: app_cache
     tags: [app, example, cache]
 ```
+
+Guard examples:
+
+```yaml
+skip_if_process_running:
+  - com.example.app
+presence_guards:
+  - path: "Offline Media"
+    scope: candidate
+content_guards:
+  - path: "metadata.json"
+    contains: "do-not-clean"
+match_filters:
+  - "mtime age > 30d"
+```
+
+Guard `scope` may be `candidate` (default, relative to the matched item) or `absolute`.
+Safety override conditions currently support age expressions such as `age > 30d`; match filters also support `mtime` and `atime` prefixes.
 
 ## Remnant Rule Shape
 

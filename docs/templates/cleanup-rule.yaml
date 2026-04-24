@@ -3,6 +3,10 @@ rules:
     name: Example Cache
     paths:
       - "~/Library/Caches/com.example.app"
+    skip_if_process_running:
+      - com.example.app
+    match_filters:
+      - "mtime age > 7d"
     safety: safe
     confidence: 98
     explanation: "Disposable cache files regenerated automatically on next launch."
@@ -41,3 +45,6 @@ rules:
         explanation_suffix: "No activity in 90+ days — likely abandoned app state."
         profiles:
           - deep
+    presence_guards:
+      - path: "Do Not Clean"
+        scope: candidate

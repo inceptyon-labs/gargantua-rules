@@ -14,12 +14,15 @@ Before opening a pull request:
 4. Explain why the path is disposable, review-only, or protected.
 5. Include realistic path samples in the PR description.
 6. Run `Scripts/validate-rules.sh`.
+7. Avoid describing a batch as full Mole parity unless the audit inventory has been updated to prove it.
 
 ## Cleanup Rules
 
 Cleanup rules live in `rules/cleanup/` and describe files that can be evaluated while an app or tool is still installed.
 
 Use `safe` only for clearly disposable or regenerated data. Use `review` for preferences, local storage, sync state, offline media, or anything with user intent. Use `protected` when removal could affect privileged services or system behavior.
+
+Mole-backed rule batches should stay intentionally selective: port cache, log, derived-artifact, and bounded remnant knowledge first; leave active-file checks, command-backed cleanup, current-version retention, receipt expansion, and external-volume behavior to app features that can model those risks directly.
 
 ## Uninstall Remnant Rules
 
@@ -36,6 +39,7 @@ Scripts/validate-rules.sh
 ```
 
 The validator checks YAML structure, required fields, safety values, confidence ranges, non-empty paths, and duplicate rule IDs.
+It also checks optional guard, filter, profile override, and app-scope field shapes used by the current app snapshot.
 
 ## App Snapshot Sync
 
