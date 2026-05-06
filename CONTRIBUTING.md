@@ -30,6 +30,40 @@ Uninstall remnant rules live in `rules/uninstall/` and describe files that may r
 
 Prefer generic placeholders such as `{bundleID}`, `{appName}`, and `{teamID}` over app-specific hardcoding when the same storage family applies broadly.
 
+## App Packs
+
+App packs live in `rules/uninstall/app_packs/` and capture remnants for individual apps where their on-disk layout is idiosyncratic enough that generic placeholders miss real evidence (Docker Desktop, Xcode + helpers, Android Studio + SDK, JetBrains Toolbox + IDEs, VS Code / Cursor / Zed, etc.).
+
+Packs reuse the existing remnant-rule schema. Every rule in a pack MUST scope itself with `applies_to.bundle_ids` so the rule only fires for the named app. The pack file itself is one YAML per app (or one per closely-related cohort, like the VS Code / Cursor / Zed Electron-editor family).
+
+### Pack contract
+
+Each pack file MUST include a header comment that documents:
+
+1. **Bundle IDs** — every bundle ID the pack scopes to, including beta / preview / OSS variants.
+2. **Trust Layer matrix** — which paths are `safe`, `review`, and `protected`, and the rationale for each bucket.
+3. **Do-not-touch carve-outs** — explicit list of paths the pack deliberately excludes or marks `protected`, and *why* (credentials, signing identities, hand-authored content, account-bound sync state, etc.).
+4. **Evidence** — at least one realistic path captured on a real install of the app, with the date captured. Reviewers use this to sanity-check that the pack was authored against actual evidence rather than guessed paths.
+
+### Trust Layer defaults for app packs
+
+- `safe` — disposable caches, logs, GPU/shader caches, language-server caches, derived artifacts that regenerate on next launch.
+- `review` — settings directories, workspace state, simulator/emulator images, Toolbox-managed runtimes, anything that holds project-bound or version-bound state.
+- `protected` — credentials, signing identities (debug keystore, provisioning profiles, adb keys), license activation state, account-bound Settings Sync directories, and hand-authored configuration the user is unlikely to want auto-removed.
+
+### Working alongside `CommandActionRule`
+
+Some app cleanups are better expressed as commands than as path globs (e.g. `xcrun simctl delete unavailable`, Toolbox version pruning). Where a pack lists a path that a command rule can address more precisely, mark the path `review` and reference the command rule in the pack header. This keeps the path visible as evidence without the pack racing the command rule.
+
+### Authoring checklist
+
+- Start from `docs/templates/remnant-rule.yaml` and the existing packs in `rules/uninstall/app_packs/`.
+- Capture real paths on a development machine where the app is installed; do not guess.
+- Mark every credentials, signing-identity, license-state, and hand-authored-config path `protected`.
+- Use `exclude` to carve out protected children when a parent directory is otherwise reviewable (e.g. `~/.docker` reviewable, but `~/.docker/config.json` excluded and surfaced separately as `protected`).
+- Document the carve-outs in the file header so reviewers can verify them without diffing.
+- Run `Scripts/validate-rules.sh uninstall` and include realistic path samples in the PR description.
+
 ## Validation
 
 Run:
