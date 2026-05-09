@@ -1,0 +1,28 @@
+rules:
+  - id: tool_action_id
+    name: Tool-owned cleanup
+    tool: tool-key
+    arguments:
+      - subcommand
+      - action
+    safety: review
+    confidence: 80
+    explanation: |
+      Describe exactly what the external tool will clean and why Gargantua
+      should ask the tool to do it instead of deleting paths directly.
+    consequence: |
+      Describe restore cost for review or advanced commands, such as
+      re-downloads, lost rollback targets, or offline workflow impact.
+    category: advanced_command_action
+    regenerates: true
+    regenerate_command: "tool install/restore command"
+    affected_roots:
+      - "~/Library/Caches/tool"
+    preconditions:
+      timeout_seconds: 120
+    source:
+      name: Tool Name
+      bundle_id: com.example.tool
+    tags:
+      - example
+      - command

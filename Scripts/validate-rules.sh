@@ -7,7 +7,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 usage() {
     cat <<'EOF'
-Usage: Scripts/validate-rules.sh [all|cleanup|uninstall]
+Usage: Scripts/validate-rules.sh [all|cleanup|uninstall|command]
 
 Validates Gargantua rule YAML without requiring the app repository.
 EOF
@@ -16,7 +16,7 @@ EOF
 mode="${1:-all}"
 
 case "$mode" in
-    all|cleanup|uninstall)
+    all|cleanup|uninstall|command)
         ;;
     -h|--help|help)
         usage
@@ -291,10 +291,100 @@ rescue Psych::Exception => error
   0
 end
 
+def protected_command_root?(root)
+  expanded = root.start_with?("~/") ? File.join(Dir.home, root.delete_prefix("~/")) : root
+  normalized = File.expand_path(expanded)
+  protected = [
+    "/",
+    "/Applications",
+    "/Library",
+    "/System",
+    "/Users",
+    Dir.home,
+    File.join(Dir.home, "Library"),
+    "/private",
+    "/var"
+  ]
+  protected.any? { |entry| normalized == entry }
+end
+
+def validate_preconditions!(errors, rule, context)
+  preconditions = rule["preconditions"]
+  unless preconditions.is_a?(Hash)
+    errors << "#{context}: preconditions must be a mapping"
+    return
+  end
+
+  timeout = preconditions["timeout_seconds"]
+  unless timeout.is_a?(Integer) && timeout.positive?
+    errors << "#{context}: preconditions.timeout_seconds must be a positive integer"
+  end
+end
+
+def validate_command_file!(errors, ids, file)
+  doc = YAML.safe_load(File.read(file), permitted_classes: [], permitted_symbols: [], aliases: false) || {}
+  rules = doc["rules"]
+  unless rules.is_a?(Array)
+    errors << "#{file}: top-level rules must be an array"
+    return 0
+  end
+
+  valid_command_safety = %w[safe review]
+  valid_categories = %w[developer_tool_command advanced_command_action]
+
+  rules.each_with_index do |rule, index|
+    context = "#{file}: rules[#{index}]"
+    unless rule.is_a?(Hash)
+      errors << "#{context}: must be a mapping"
+      next
+    end
+
+    validate_rule_ids!(errors, ids, rule, context)
+    %w[name tool explanation category].each { |field| require_field!(errors, rule, field, context) }
+    validate_string_array!(errors, rule["arguments"], "#{context}: arguments")
+    validate_optional_string_array!(errors, rule["dry_run_arguments"], "#{context}: dry_run_arguments")
+    validate_source!(errors, rule, context)
+    validate_confidence!(errors, rule, context)
+    validate_optional_string!(errors, rule["consequence"], "#{context}: consequence")
+    validate_optional_string!(errors, rule["regenerate_command"], "#{context}: regenerate_command")
+    validate_string_array!(errors, rule["affected_roots"], "#{context}: affected_roots")
+    validate_preconditions!(errors, rule, context)
+    validate_optional_string_array!(errors, rule["tags"], "#{context}: tags")
+
+    safety = rule["safety"]
+    errors << "#{context}: safety must be one of #{valid_command_safety.join(", ")}" unless valid_command_safety.include?(safety)
+    errors << "#{context}: category must be one of #{valid_categories.join(", ")}" unless valid_categories.include?(rule["category"])
+
+    if rule["affected_roots"].is_a?(Array)
+      rule["affected_roots"].each do |root_path|
+        next unless root_path.is_a?(String)
+        errors << "#{context}: affected_roots cannot target protected root #{root_path.inspect}" if protected_command_root?(root_path)
+      end
+    end
+
+    unless [true, false].include?(rule["regenerates"])
+      errors << "#{context}: regenerates must be true or false"
+    end
+
+    next unless rule["category"] == "advanced_command_action"
+
+    errors << "#{context}: advanced command rules must use safety: review" unless safety == "review"
+    require_string!(errors, rule["consequence"], "#{context}: consequence")
+    require_string!(errors, rule["regenerate_command"], "#{context}: regenerate_command")
+  end
+
+  rules.length
+rescue Psych::Exception => error
+  errors << "#{file}: invalid YAML: #{error.message}"
+  0
+end
+
 cleanup_files = yaml_files(File.join(root, "rules", "cleanup"))
 uninstall_files = yaml_files(File.join(root, "rules", "uninstall"))
+command_files = yaml_files(File.join(root, "rules", "command"))
 cleanup_count = 0
 uninstall_count = 0
+command_count = 0
 
 if %w[all cleanup].include?(mode)
   cleanup_files.each do |file|
@@ -308,8 +398,15 @@ if %w[all uninstall].include?(mode)
   end
 end
 
+if %w[all command].include?(mode)
+  command_files.each do |file|
+    command_count += validate_command_file!(errors, ids, file)
+  end
+end
+
 puts "==> Cleanup rules: #{cleanup_files.length} files / #{cleanup_count} rules" if %w[all cleanup].include?(mode)
 puts "==> Uninstall rules: #{uninstall_files.length} files / #{uninstall_count} rules" if %w[all uninstall].include?(mode)
+puts "==> Command rules: #{command_files.length} files / #{command_count} commands" if %w[all command].include?(mode)
 
 if errors.any?
   warn "Rule validation failed:"

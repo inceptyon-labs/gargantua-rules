@@ -2,7 +2,7 @@
 
 Thanks for helping make Gargantua safer and more useful.
 
-This repository is for rule-only changes: cleanup rules, uninstall remnant rules, schema docs, templates, and validation improvements. App code changes belong in the main [Gargantua app repository](https://github.com/inceptyon-labs/gargantua).
+This repository is for rule-only changes: cleanup rules, uninstall remnant rules, command-action rules, schema docs, templates, and validation improvements. App code changes belong in the main [Gargantua app repository](https://github.com/inceptyon-labs/gargantua).
 
 ## Rule Checklist
 
@@ -29,6 +29,14 @@ Mole-backed rule batches should stay intentionally selective: port cache, log, d
 Uninstall remnant rules live in `rules/uninstall/` and describe files that may remain after an app is removed.
 
 Prefer generic placeholders such as `{bundleID}`, `{appName}`, and `{teamID}` over app-specific hardcoding when the same storage family applies broadly.
+
+## Command-Action Rules
+
+Command-action rules live in `rules/command/` and describe tool-owned cleanup that cannot be modeled honestly as path globs, such as `xcrun simctl delete unavailable`, `pnpm store prune`, or Go cache cleanup.
+
+Use `developer_tool_command` for routine tool cleanups. Use `advanced_command_action` for high-consequence commands that may force large re-downloads, break offline work, or affect rollback semantics. Advanced command rules must be `review`, include `consequence`, include `regenerate_command`, declare non-protected `affected_roots`, and set `preconditions.timeout_seconds`.
+
+Command rules are audited as command evidence in the app: the executor records the tool version, exact arguments, exit code, and `kind: command`. Keep the YAML boring and explicit; do not rely on shell expansion, pipes, or implicit working directories.
 
 ## App Packs
 
@@ -73,8 +81,8 @@ Run:
 Scripts/validate-rules.sh
 ```
 
-The validator checks YAML structure, required fields, safety values, confidence ranges, non-empty paths, and duplicate rule IDs.
-It also checks optional guard, filter, profile override, and app-scope field shapes used by the current app snapshot.
+The validator checks YAML structure, required fields, safety values, confidence ranges, non-empty paths, command affected roots, and duplicate rule IDs.
+It also checks optional guard, filter, profile override, app-scope, and command-action field shapes used by the current app snapshot.
 
 ## App Snapshot Sync
 

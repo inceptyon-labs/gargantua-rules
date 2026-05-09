@@ -71,6 +71,63 @@ match_filters:
 Guard `scope` may be `candidate` (default, relative to the matched item) or `absolute`.
 Safety override conditions currently support age expressions such as `age > 30d`; match filters also support `mtime` and `atime` prefixes.
 
+## Command-Action Rule Shape
+
+Command-action files live under `rules/command/` and use this top-level key:
+
+```yaml
+rules:
+```
+
+Common fields:
+
+- `id`: stable unique identifier.
+- `name`: human-readable name.
+- `tool`: resolver key for the executable, such as `xcrun`, `pnpm`, `go`, `brew`, or `docker`.
+- `arguments`: exact argument list passed to the tool; no shell interpolation.
+- `dry_run_arguments`: optional preview arguments.
+- `safety`: `safe` or `review`; `protected` is rejected for command rules.
+- `confidence`: integer from `0` to `100`.
+- `explanation`: rationale shown before cleanup.
+- `consequence`: required for `advanced_command_action`; recommended for any review command.
+- `category`: `developer_tool_command` or `advanced_command_action`.
+- `regenerates`: boolean.
+- `regenerate_command`: restore hint; required for `advanced_command_action`.
+- `affected_roots`: every filesystem root the command may touch.
+- `preconditions.timeout_seconds`: positive integer wall-clock cap.
+- `source.name`: app or subsystem name.
+- `source.bundle_id`: optional bundle identifier.
+- `tags`: optional tags.
+
+Example:
+
+```yaml
+rules:
+  - id: go_clean_modcache
+    name: Go module download cache
+    tool: go
+    arguments:
+      - clean
+      - -modcache
+    safety: review
+    confidence: 72
+    explanation: |
+      Removes the Go module download cache.
+    consequence: |
+      Future Go builds may need network access to re-download modules.
+    category: advanced_command_action
+    regenerates: true
+    regenerate_command: "go mod download"
+    affected_roots:
+      - "~/go/pkg/mod"
+    preconditions:
+      timeout_seconds: 180
+    source:
+      name: Go
+      bundle_id: org.golang.go
+    tags: [go, module-cache, advanced-command]
+```
+
 ## Remnant Rule Shape
 
 Uninstall remnant files live under `rules/uninstall/` and use this top-level key:
@@ -120,6 +177,8 @@ remnant_rules:
 - `safe`: disposable caches, logs, derived artifacts, rebuildable state.
 - `review`: local storage, sync state, preferences, offline media, containers.
 - `protected`: launch daemons, privileged helpers, boot/system paths, or similarly sensitive system-impacting items.
+
+Command rules are stricter: they must not target protected roots, and advanced command rules must be review-only with explicit consequence and restore guidance.
 
 ## Naming Guidelines
 

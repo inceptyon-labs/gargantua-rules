@@ -8,6 +8,7 @@ Gargantua does not load mutable remote rules at runtime. The app imports reviewe
 
 - Cleanup rules: 50 files / 274 rules
 - Uninstall remnant rules: 9 files / 91 rules
+- Command-action rules: 4 files / 4 commands
 
 This is a reviewed Mole-expanded snapshot, not a claim of full Mole parity. Rule batches should continue to prefer high-signal, safely bounded paths over blind shell-line translation.
 
@@ -17,6 +18,8 @@ This is a reviewed Mole-expanded snapshot, not a claim of full Mole parity. Rule
   YAML cleanup rules used while an app or tool is still installed.
 - `rules/uninstall/`
   YAML remnant rules used after an app has been removed.
+- `rules/command/`
+  YAML command-action rules for tool-owned cleanup that cannot be modeled as path deletion.
 - `docs/schema.md`
   Practical schema guide for cleanup and uninstall rules.
 - `docs/templates/`
@@ -55,6 +58,7 @@ Scope validation when iterating:
 ```bash
 Scripts/validate-rules.sh cleanup
 Scripts/validate-rules.sh uninstall
+Scripts/validate-rules.sh command
 ```
 
 ## Release Flow
