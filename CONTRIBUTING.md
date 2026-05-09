@@ -60,6 +60,7 @@ Some app cleanups are better expressed as commands than as path globs (e.g. `xcr
 - Start from `docs/templates/remnant-rule.yaml` and the existing packs in `rules/uninstall/app_packs/`.
 - Capture real paths on a development machine where the app is installed; do not guess.
 - Mark every credentials, signing-identity, license-state, and hand-authored-config path `protected`.
+- Treat common project roots, clipboard/history stores, and user-authored automation as `protected` or explicitly excluded.
 - Use `exclude` to carve out protected children when a parent directory is otherwise reviewable (e.g. `~/.docker` reviewable, but `~/.docker/config.json` excluded and surfaced separately as `protected`).
 - Document the carve-outs in the file header so reviewers can verify them without diffing.
 - Run `Scripts/validate-rules.sh uninstall` and include realistic path samples in the PR description.

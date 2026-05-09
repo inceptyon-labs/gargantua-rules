@@ -7,7 +7,7 @@ Gargantua does not load mutable remote rules at runtime. The app imports reviewe
 ## Current Inventory
 
 - Cleanup rules: 50 files / 274 rules
-- Uninstall remnant rules: 2 files / 28 rules
+- Uninstall remnant rules: 9 files / 91 rules
 
 This is a reviewed Mole-expanded snapshot, not a claim of full Mole parity. Rule batches should continue to prefer high-signal, safely bounded paths over blind shell-line translation.
 
