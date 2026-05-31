@@ -21,7 +21,7 @@ This is a reviewed Mole-expanded snapshot, not a claim of full Mole parity. Rule
 - `rules/command/`
   YAML command-action rules for tool-owned cleanup that cannot be modeled as path deletion.
 - `docs/schema.md`
-  Practical schema guide for cleanup and uninstall rules.
+  Practical schema guide for cleanup, command-action, and uninstall rules.
 - `docs/templates/`
   Copyable starting points for new rule files.
 - `Scripts/validate-rules.sh`
