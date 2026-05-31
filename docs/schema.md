@@ -32,6 +32,7 @@ Common fields:
 - `category`: scan category used by profiles and grouping.
 - `tags`: optional tags.
 - `safety_overrides`: optional profile-aware reclassification rules.
+- `provenance`: optional authorship/review metadata (see below).
 
 Example:
 
@@ -70,6 +71,26 @@ match_filters:
 
 Guard `scope` may be `candidate` (default, relative to the matched item) or `absolute`.
 Safety override conditions currently support age expressions such as `age > 30d`; match filters also support `mtime` and `atime` prefixes.
+
+### Provenance
+
+An optional `provenance` block records who authored and reviewed a rule. The app
+surfaces it in the Rule Viewer's "Provenance & Trust" panel, where a non-empty
+`reviewed_by` is shown as a "Reviewed" trust signal. Every field is optional, so
+rules may declare any subset (or omit the block entirely).
+
+- `provenance.author`: handle or name of the rule author.
+- `provenance.reviewed_by`: maintainer(s) who reviewed/signed off — a single string or a list.
+- `provenance.added_in`: release or commit the rule first shipped in (e.g. `v1.4.0`).
+
+```yaml
+provenance:
+  author: octocat
+  reviewed_by:
+    - maintainer-a
+    - maintainer-b
+  added_in: v1.4.0
+```
 
 ## Command-Action Rule Shape
 

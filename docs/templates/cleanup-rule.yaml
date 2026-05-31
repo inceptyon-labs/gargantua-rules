@@ -48,3 +48,10 @@ rules:
     presence_guards:
       - path: "Do Not Clean"
         scope: candidate
+    # Optional authorship/review metadata, surfaced in the app's
+    # "Provenance & Trust" panel. Any subset of fields may be set.
+    provenance:
+      author: octocat
+      reviewed_by:
+        - maintainer-a
+      added_in: v1.4.0
