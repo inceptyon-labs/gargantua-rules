@@ -15,9 +15,10 @@ Common fields:
 - `id`: stable unique identifier.
 - `name`: human-readable name.
 - `paths`: one or more absolute or `~`-relative glob paths.
+  A path to a SQLite database file (`.db`, `.sqlite`, `.sqlite3`, `.vscdb`) is sized, aged and removed together with its `-wal`, `-shm` and `-journal` files, sidecars first. Such a rule must name the database's owner in `skip_if_process_running`, and no rule may target a sidecar on its own.
 - `pattern`: optional filename filter inside a matched directory.
 - `exclude`: optional glob exclusions.
-- `skip_if_process_running`: optional bundle IDs or process/app names that skip the rule while running.
+- `skip_if_process_running`: optional bundle IDs, app names, or command-line executable names. While one is running the rule's items are shown locked, and they are checked again before removal. An identifier without a dot also matches any running process by executable name, so a CLI such as `codex` can be named.
 - `presence_guards`: optional candidate-relative or absolute paths that skip a match when present.
 - `content_guards`: optional candidate-relative or absolute files whose contents can skip a match.
 - `match_filters`: optional conditions that must match before an item is surfaced, such as `mtime age > 30d`.
