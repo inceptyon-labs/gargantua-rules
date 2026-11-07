@@ -105,7 +105,7 @@ Common fields:
 
 - `id`: stable unique identifier.
 - `name`: human-readable name.
-- `tool`: resolver key for the executable, such as `xcrun`, `pnpm`, `go`, `brew`, or `docker`.
+- `tool`: resolver key for the executable, such as `xcrun`, `pnpm`, `go`, `brew`, `docker`, or `tmutil`. The app pins `xcrun` to `simctl` and `tmutil` to `listlocalsnapshots` and `deletelocalsnapshots`.
 - `arguments`: exact argument list passed to the tool; no shell interpolation.
 - `dry_run_arguments`: optional preview arguments.
 - `safety`: `safe` or `review`; `protected` is rejected for command rules.
