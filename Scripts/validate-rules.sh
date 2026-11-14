@@ -7,7 +7,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 usage() {
     cat <<'EOF'
-Usage: Scripts/validate-rules.sh [all|cleanup|uninstall|command]
+Usage: Scripts/validate-rules.sh [all|cleanup|uninstall|command|updates]
 
 Validates Gargantua rule YAML without requiring the app repository.
 EOF
@@ -16,7 +16,7 @@ EOF
 mode="${1:-all}"
 
 case "$mode" in
-    all|cleanup|uninstall|command)
+    all|cleanup|uninstall|command|updates)
         ;;
     -h|--help|help)
         usage
@@ -379,12 +379,92 @@ rescue Psych::Exception => error
   0
 end
 
+def validate_https_url!(errors, value, context)
+  unless value.is_a?(String) && value.start_with?("https://") && value.length > "https://".length
+    errors << "#{context}: must be an https:// URL"
+  end
+end
+
+def validate_regex!(errors, value, context)
+  require_string!(errors, value, context)
+  return unless value.is_a?(String) && !value.empty?
+
+  Regexp.new(value)
+rescue RegexpError => error
+  errors << "#{context}: invalid regex: #{error.message}"
+end
+
+def validate_update_file!(errors, ids, bundle_ids, file)
+  doc = YAML.safe_load(File.read(file), permitted_classes: [], permitted_symbols: [], aliases: false) || {}
+  entries = doc["update_sources"]
+  unless entries.is_a?(Array)
+    errors << "#{file}: top-level update_sources must be an array"
+    return 0
+  end
+
+  entries.each_with_index do |entry, index|
+    context = "#{file}: update_sources[#{index}]"
+    unless entry.is_a?(Hash)
+      errors << "#{context}: must be a mapping"
+      next
+    end
+
+    validate_rule_ids!(errors, ids, entry, context)
+    %w[name bundle_id team_id explanation].each { |field| require_string!(errors, entry[field], "#{context}: #{field}") }
+
+    bundle_id = entry["bundle_id"]
+    if bundle_id.is_a?(String) && !bundle_id.empty?
+      errors << "#{context}: duplicate bundle_id #{bundle_id}" if bundle_ids.key?(bundle_id)
+      bundle_ids[bundle_id] = true
+    end
+
+    team_id = entry["team_id"]
+    if team_id.is_a?(String) && team_id !~ /\A[A-Z0-9]{10}\z/
+      errors << "#{context}: team_id must be a 10-character Apple Team ID"
+    end
+
+    unless %w[auto link_only].include?(entry["install"])
+      errors << "#{context}: install must be auto or link_only"
+    end
+    validate_https_url!(errors, entry["homepage"], "#{context}: homepage") unless entry["homepage"].nil?
+    validate_optional_string_array!(errors, entry["tags"], "#{context}: tags")
+
+    source = entry["source"]
+    unless source.is_a?(Hash)
+      errors << "#{context}: source must be a mapping"
+      next
+    end
+
+    case source["type"]
+    when "sparkle"
+      validate_https_url!(errors, source["feed_url"], "#{context}: source.feed_url")
+    when "github"
+      unless source["repo"].is_a?(String) && source["repo"] =~ %r{\A[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+\z}
+        errors << "#{context}: source.repo must be owner/name"
+      end
+      validate_regex!(errors, source["asset"], "#{context}: source.asset")
+      validate_regex!(errors, source["asset_x86_64"], "#{context}: source.asset_x86_64") unless source["asset_x86_64"].nil?
+      validate_optional_string!(errors, source["tag_prefix"], "#{context}: source.tag_prefix")
+    else
+      errors << "#{context}: source.type must be sparkle or github"
+    end
+  end
+
+  entries.length
+rescue Psych::Exception => error
+  errors << "#{file}: invalid YAML: #{error.message}"
+  0
+end
+
 cleanup_files = yaml_files(File.join(root, "rules", "cleanup"))
 uninstall_files = yaml_files(File.join(root, "rules", "uninstall"))
 command_files = yaml_files(File.join(root, "rules", "command"))
+update_files = yaml_files(File.join(root, "rules", "updates"))
 cleanup_count = 0
 uninstall_count = 0
 command_count = 0
+update_count = 0
+update_bundle_ids = {}
 
 if %w[all cleanup].include?(mode)
   cleanup_files.each do |file|
@@ -404,9 +484,16 @@ if %w[all command].include?(mode)
   end
 end
 
+if %w[all updates].include?(mode)
+  update_files.each do |file|
+    update_count += validate_update_file!(errors, ids, update_bundle_ids, file)
+  end
+end
+
 puts "==> Cleanup rules: #{cleanup_files.length} files / #{cleanup_count} rules" if %w[all cleanup].include?(mode)
 puts "==> Uninstall rules: #{uninstall_files.length} files / #{uninstall_count} rules" if %w[all uninstall].include?(mode)
 puts "==> Command rules: #{command_files.length} files / #{command_count} commands" if %w[all command].include?(mode)
+puts "==> Update sources: #{update_files.length} files / #{update_count} apps" if %w[all updates].include?(mode)
 
 if errors.any?
   warn "Rule validation failed:"

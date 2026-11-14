@@ -194,6 +194,47 @@ remnant_rules:
     tags: [generic, support]
 ```
 
+## Update Sources
+
+Files in `rules/updates/` tell Gargantua's App Updater where to find releases for apps its automatic sources miss. Automatic sources are the `SUFeedURL` in an app's Info.plist, Homebrew cask metadata and the Mac App Store. Add an entry only when those don't cover the app, for example when it sets its Sparkle feed in code or ships through GitHub Releases. The app never fetches this file at runtime; it bundles a reviewed snapshot like the other rule lanes.
+
+Top-level key: `update_sources`.
+
+Required fields:
+
+- `id`: stable unique identifier.
+- `name`: app name.
+- `bundle_id`: the installed app's `CFBundleIdentifier`. One entry per bundle ID.
+- `team_id`: the 10-character Apple Developer Team ID the app is signed with (`codesign -dv /Applications/X.app 2>&1 | grep TeamIdentifier`). Gargantua refuses an update signed by any other team.
+- `source.type`: `sparkle` or `github`.
+- `install`: `auto` (Gargantua may download, verify and install it) or `link_only` (show the update and link to `homepage`).
+- `explanation`: why the automatic sources miss this app.
+
+Source fields:
+
+- `sparkle`: `feed_url`, an https appcast URL.
+- `github`: `repo` (`owner/name`) and `asset`, a regex matched against the latest release's asset names. Optional `asset_x86_64` overrides `asset` on Intel Macs when the project ships separate builds. Optional `tag_prefix` is stripped from the release tag to get the version (`v` for `v1.2.3`). GitHub's `releases/latest` endpoint skips drafts and prereleases.
+
+Optional fields: `homepage` (https), `tags`.
+
+Example:
+
+```yaml
+update_sources:
+  - id: example_app
+    name: Example
+    bundle_id: com.example.Example
+    team_id: ABCDE12345
+    source:
+      type: github
+      repo: example/example-mac
+      asset: '^Example-[0-9.]+\.dmg$'
+      tag_prefix: v
+    install: auto
+    homepage: https://example.com
+    explanation: Released on GitHub; the app has no update feed.
+```
+
 ## Safety Heuristics
 
 - `safe`: disposable caches, logs, derived artifacts, rebuildable state.

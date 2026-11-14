@@ -1,6 +1,6 @@
 # Gargantua Rules
 
-Community-maintained cleanup and uninstall rules for [Gargantua](https://github.com/inceptyon-labs/gargantua).
+Community-maintained cleanup, uninstall and update-source rules for [Gargantua](https://github.com/inceptyon-labs/gargantua).
 
 Gargantua does not load mutable remote rules at runtime. The app imports reviewed snapshots from this repository into its bundled resources so every release keeps deterministic safety behavior.
 
@@ -9,6 +9,7 @@ Gargantua does not load mutable remote rules at runtime. The app imports reviewe
 - Cleanup rules: 50 files / 307 rules
 - Uninstall remnant rules: 9 files / 91 rules
 - Command-action rules: 5 files / 5 commands
+- Update sources: 1 file / 5 apps
 
 This is a reviewed Mole-expanded snapshot, not a claim of full Mole parity. Rule batches should continue to prefer high-signal, safely bounded paths over blind shell-line translation.
 
@@ -20,8 +21,10 @@ This is a reviewed Mole-expanded snapshot, not a claim of full Mole parity. Rule
   YAML remnant rules used after an app has been removed.
 - `rules/command/`
   YAML command-action rules for tool-owned cleanup that cannot be modeled as path deletion.
+- `rules/updates/`
+  YAML update sources for the App Updater, for apps its automatic sources (Sparkle feeds in Info.plist, Homebrew casks, Mac App Store) miss.
 - `docs/schema.md`
-  Practical schema guide for cleanup, command-action, and uninstall rules.
+  Practical schema guide for cleanup, command-action, uninstall and update-source rules.
 - `docs/templates/`
   Copyable starting points for new rule files.
 - `Scripts/validate-rules.sh`

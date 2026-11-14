@@ -1,0 +1,12 @@
+update_sources:
+  - id: example_app
+    name: Example
+    bundle_id: com.example.Example
+    team_id: ABCDE12345
+    source:
+      type: sparkle
+      feed_url: https://example.com/appcast.xml
+    install: auto
+    homepage: https://example.com
+    explanation: The app sets its Sparkle feed in code, so it is not in Info.plist.
+    tags: [sparkle]
